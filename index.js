@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
     );
   },
 });
-
+console.log("haha")
 const upload = multer({ storage: storage });
 
 //this is for storing the images
@@ -213,4 +213,6 @@ app.post("/delete", async function (req, res) {
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success");
 });
-app.listen(process.env.PORT);
+app.listen(process.env.PORT).then(()=>{
+  console.log(`listen on ${process.env.PORT}`)
+});
