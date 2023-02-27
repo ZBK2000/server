@@ -212,6 +212,8 @@ app.post("/delete", async function (req, res) {
 });
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success");
+}).catch((err) => {
+  console.error("error connecting to MongoDB:", err);
 });
 const server = app.listen(process.env.PORT, () => {
   console.log(`Server listening on port ${process.env.PORT}`);
