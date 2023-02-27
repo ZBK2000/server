@@ -213,6 +213,10 @@ app.post("/delete", async function (req, res) {
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success");
 });
-app.listen(process.env.PORT).then(()=>{
-  console.log(`listen on ${process.env.PORT}`)
+const server = app.listen(process.env.PORT, () => {
+  console.log(`Server listening on port ${process.env.PORT}`);
+});
+
+server.on('error', (err) => {
+  console.error(`Server error: ${err}`);
 });
