@@ -79,6 +79,11 @@ app.post("/signup", async function (req, res) {
   if (existingUser) {
     return res.status(409).send("User already exists");
   }
+  res.send("successfully registrated");
+});
+
+app.post("/usersave", async function (req, res) {
+  const newUser = new UserModel(req.body);
   await newUser.save();
   res.send("successfully registrated");
 });
