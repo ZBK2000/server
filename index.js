@@ -6,6 +6,7 @@ import cors from "cors";
 import UserModel from "./usersdb.js";
 import multer from "multer";
 import path from "path";
+import fs from "fs"
 config();
 const app = express();
 app.use(express.json());
@@ -189,7 +190,19 @@ app.post("/newDay", async function (req, res) {
 app.post("/delete", async function (req, res) {
   const id = req.body.id;
   const track = req.body.track;
-
+  const track_for_delete = await TrackModel.findOne({ name: track });
+  for (let images_number in track_for_delete.img_urls) {
+    fs.unlink(path.join(
+      process.cwd(),
+      "public",
+      "images",
+      track_for_delete.img_urls[images_number].filename), (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Error deleting file');
+      }}
+    )
+  }
   await TrackModel.findOneAndDelete({ name: track });
 
   // search for the user based on their ID
@@ -208,6 +221,7 @@ app.post("/delete", async function (req, res) {
       { booked_tracks: filteredBooked, tracks: filteredtracks }
     );
   }
+  
   res.send("deleted");
 });
 mongoose.connect(process.env.MONGO_URL).then(() => {
