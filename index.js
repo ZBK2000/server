@@ -75,10 +75,17 @@ app.post("/signup", async function (req, res) {
   const newUser = new UserModel(req.body);
   const existingUser = await UserModel.findOne({
     $or: [{ user: newUser.user }, { password: newUser.password }],
-  });
-  if (existingUser) {
-    return res.status(409).send("User already exists");
-  }
+});
+
+if (existingUser) {
+    if (existingUser.user === newUser.user && existingUser.password === newUser.password) {
+        return res.status(409).send("username and email");
+    } else if (existingUser.user === newUser.user) {
+        return res.status(409).send("username");
+    } else if (existingUser.password === newUser.password) {
+        return res.status(409).send("email");
+    }
+}
   res.send("successfully registrated");
 });
 
