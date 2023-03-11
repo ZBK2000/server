@@ -21,6 +21,14 @@ const UserSchema = new Schema({
   booked_tracks: {
     type: Array,
     default: []
+  },
+  reviews:{
+    type: Object,
+    default: {}
+  },
+  favourites:{
+    type: Array,
+    default: []
   }
 });
 

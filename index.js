@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
     );
   },
 });
-console.log("haha")
+
 const upload = multer({ storage: storage });
 
 //this is for storing the images
@@ -66,7 +66,7 @@ app.post("/", async function (req, res) {
 //this is fro retrieving all tracks
 app.get("/", async (req, res) => {
   const allTrack = await TrackModel.find();
-  console.log(allTrack)
+ 
   res.send(allTrack);
 });
 
@@ -131,7 +131,7 @@ app.post("/tracks", async function (req, res) {
         { $set: { [`booked.${rightDay}`]: req.body.h3s } },
         { new: true }
       );
-
+      
       res.send(doc);
     } else {
       res.send(existingTrack);
@@ -194,7 +194,7 @@ app.post("/newDay", async function (req, res) {
     { $set: { [`booked.${req.body.rightDay}`]: req.body.h3s } },
     { new: true }
   );
-
+    
   res.send(doc);
 });
 
@@ -236,6 +236,75 @@ app.post("/delete", async function (req, res) {
   
   res.send("deleted");
 });
+
+app.post("/review", async function (req, res) {
+  const doc = await TrackModel.findOneAndUpdate(
+    { name: req.body.trackName },
+    { $push: { reviews: [req.body.name, req.body.review, req.body.reviewicon] } },
+    { new: true }
+  );
+    
+  res.send(doc.reviews);
+});
+app.post("/initialReview", async function (req, res) {
+  
+  const doc = await TrackModel.findOne(
+    { name: req.body.trackName }
+  );
+    
+    try {
+      res.send(doc.reviews);
+    } catch (error) {
+      res.send("no reviews yet")
+    }
+  
+});
+
+app.post("/favourites", async function (req, res) {
+  
+  const doc = await UserModel.findOne(
+    { user: req.body.user }
+  );
+  try {
+    if(req.body.change){
+        if(doc.get('favourites') !== undefined){
+        if (doc.favourites.includes(req.body.trackName)){
+  const newdoc = await UserModel.findOneAndUpdate(
+    { user: req.body.user },
+    { $pull: { favourites: req.body.trackName } },
+    { new: true }
+  )
+  res.send(newdoc.favourites);
+} else {
+    const newdoc = await UserModel.findOneAndUpdate(
+      { user: req.body.user },
+      { $push: { favourites: req.body.trackName } },
+      { new: true }
+    )
+    res.send(newdoc.favourites);
+  }} else{
+    const newdoc = await UserModel.findOneAndUpdate(
+      { user: req.body.user },
+      { $push: { favourites: req.body.trackName } },
+      { new: true }
+    )
+    res.send(newdoc.favourites);
+      
+    } 
+   
+  } else{
+    try {
+      res.send(doc.favourites)
+    } catch (error) {
+      res.send([])
+    }
+    
+ 
+  }}catch (error) {
+    res.send(error);
+  }
+});
+
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success");
 }).catch((err) => {
