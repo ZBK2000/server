@@ -43,6 +43,7 @@ app.get("/img", async function (req, res) {
   res.sendFile(
     path.join(
       process.cwd(),
+      "../../../..",
       "public",
       "images",
       track.img_urls[req.query.number].filename
