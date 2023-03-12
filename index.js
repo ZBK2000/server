@@ -207,6 +207,7 @@ app.post("/delete", async function (req, res) {
   for (let images_number in track_for_delete.img_urls) {
     fs.unlink(path.join(
       process.cwd(),
+      "../../../..",
       "public",
       "images",
       track_for_delete.img_urls[images_number].filename), (err) => {
