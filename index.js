@@ -7,6 +7,7 @@ import UserModel from "./usersdb.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs"
+import LinkModel from "./customLinkdb.js";
 config();
 const app = express();
 app.use(express.json());
@@ -307,6 +308,51 @@ app.post("/favourites", async function (req, res) {
   }
 });
 
+app.post("/customLink", async function (req, res) {
+  try {
+    const newLink = new LinkModel(req.body);
+    await newLink.save();
+    const user  = await UserModel.findOneAndUpdate(
+      { user: req.body.user },
+      { $push: { customLinks: [newLink._id, newLink.trackName, newLink.time] } },
+      { new: true }
+    )
+    res.send({msg: "success", linkId:newLink._id});
+  } catch (error) {
+    res.send(error);
+  }
+
+})
+app.post("/rightCustomLink", async function (req, res) {
+  console.log(req.body.hashcode)
+  try {
+    const linkInfo = await LinkModel.findOne({ _id: req.body.hashcode });
+    console.log(linkInfo)
+    res.send(linkInfo);
+  } catch (error) {
+    res.send(error);
+  }
+
+})
+app.post("/rightCustomLinkUpdate", async function (req, res) {
+  console.log(req.body.data)
+  try {
+    const linkInfo = await LinkModel.findOneAndUpdate(
+      { _id: req.body.data._id },
+      { $set: { slots: req.body.data.slots} },
+      { new: true })
+      const user  = await UserModel.findOneAndUpdate(
+        { user: req.body.user },
+        { $push: { customLinks: [linkInfo._id, linkInfo.trackName, linkInfo.time] } },
+        { new: true }
+      )
+    console.log(linkInfo)
+    res.send(linkInfo);
+  } catch (error) {
+    res.send(error);
+  }
+
+})
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success");
 }).catch((err) => {

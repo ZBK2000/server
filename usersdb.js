@@ -29,6 +29,10 @@ const UserSchema = new Schema({
   favourites:{
     type: Array,
     default: []
+  },
+  customLinks:{
+    type: Array,
+    default: []
   }
 });
 
