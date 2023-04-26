@@ -123,6 +123,7 @@ app.post("/tracks", async function (req, res) {
   console.log(foundBooking)
   if (!foundBooking.slots.includes("")){
     res.status(403).send(existingTrack)
+    return
   }
   await UserModel.findOneAndUpdate(
     { user: req.body.user },
