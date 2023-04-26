@@ -111,12 +111,18 @@ app.post("/login", async function (req, res) {
 //this for modifing a certain tracks data
 app.post("/tracks", async function (req, res) {
   const existingTrack = await TrackModel.findOne({ name: req.body.id });
+  
   let text;
   for (let booked in req.body.h3s) {
     if (req.body.h3s[booked].id == req.body.time_id) {
       text = req.body.h3s[booked].text.split(" ")[0];
       break;
     }
+  }
+  const foundBooking = existingTrack.booked[req.body.subTrackName][req.body.rightDay].find(booking => booking.text.includes(text))
+  console.log(foundBooking)
+  if (!foundBooking.slots.includes("")){
+    res.status(403).send(existingTrack)
   }
   await UserModel.findOneAndUpdate(
     { user: req.body.user },
