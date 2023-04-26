@@ -11,9 +11,10 @@ const TrackSchema  = new Schema({
   description: String,
   booked: Object,
   img_urls: Array,
-  slot_number: Number,
+  slot_number: Array,
   reviews: Array,
-  latAndLong: Array
+  latAndLong: Array,
+  trackName: Array,
  
 });
 

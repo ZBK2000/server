@@ -16,6 +16,7 @@ app.use(cors());
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "../../../../public/images");
+    cb(null, "public/images")
   },
   filename: function (req, file, cb) {
     cb(
@@ -120,7 +121,7 @@ app.post("/tracks", async function (req, res) {
   await UserModel.findOneAndUpdate(
     { user: req.body.user },
     {
-      $push: { booked_tracks: `${req.body.id}: ${req.body.rightDay} ${text}` },
+      $push: { booked_tracks: `${req.body.id}: ${req.body.rightDay} ${text} ${req.body.subTrackName}` },
     },
     { new: true }
   );
@@ -128,9 +129,10 @@ app.post("/tracks", async function (req, res) {
   if (existingTrack) {
     if (req.body.h3s) {
       const rightDay = req.body.rightDay;
+      const subTrack = req.body.subTrackName;
       const doc = await TrackModel.findOneAndUpdate(
         { name: req.body.id },
-        { $set: { [`booked.${rightDay}`]: req.body.h3s } },
+        { $set: { [`booked.${subTrack}.${rightDay}`]: req.body.h3s } },
         { new: true }
       );
       
@@ -145,6 +147,7 @@ app.post("/tracks", async function (req, res) {
 app.post("/user", async function (req, res) {
   const user = await UserModel.findOne({ user: req.body.id });
   if (user) {
+    console.log(user)
     res.send(user);
   }
 });
@@ -152,8 +155,8 @@ app.post("/user", async function (req, res) {
 //this for cancelling booked this from user data
 app.post("/cancel", async function (req, res) {
   const doc = await TrackModel.findOne({ name: req.body.nameOfTrack });
-
-  const bookedTimes = doc.booked[req.body.rightDay];
+ console.log(req.body)
+  const bookedTimes = doc.booked[req.body.subTrack][req.body.rightDay];
   for (let times in bookedTimes) {
     if (
       bookedTimes[times].text.indexOf(req.body.timeline.split(" ")[0]) !== -1
@@ -174,26 +177,26 @@ app.post("/cancel", async function (req, res) {
   }
   await TrackModel.findOneAndUpdate(
     { name: req.body.nameOfTrack },
-    { $set: { [`booked.${req.body.rightDay}`]: bookedTimes } },
+    { $set: { [`booked.${req.body.subTrack}.${req.body.rightDay}`]: bookedTimes } },
     { new: true }
   );
   await UserModel.findOneAndUpdate(
     { user: req.body.id },
     {
       $pull: {
-        booked_tracks: `${req.body.nameOfTrack}: ${req.body.rightDay} ${req.body.timeline}`,
+        booked_tracks: `${req.body.nameOfTrack}: ${req.body.rightDay} ${req.body.timeline} ${req.body.subTrack}`,
       },
     },
     { new: true }
   );
-
+    console.log("haha")
   res.send("success");
 });
 //this for initializing anew day to the tracks database
 app.post("/newDay", async function (req, res) {
   const doc = await TrackModel.findOneAndUpdate(
     { name: req.body.id },
-    { $set: { [`booked.${req.body.rightDay}`]: req.body.h3s } },
+    { $set: { [`booked.${req.body.subTrack}${req.body.rightDay}`]: req.body.h3s } },
     { new: true }
   );
     
@@ -314,7 +317,7 @@ app.post("/customLink", async function (req, res) {
     await newLink.save();
     const user  = await UserModel.findOneAndUpdate(
       { user: req.body.user },
-      { $push: { customLinks: [newLink._id, newLink.trackName, newLink.time] } },
+      { $push: { customLinks: [newLink._id, newLink.trackName, newLink.time, newLink.subTrackName] } },
       { new: true }
     )
     res.send({msg: "success", linkId:newLink._id});
