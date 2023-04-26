@@ -344,12 +344,25 @@ app.post("/rightCustomLinkUpdate", async function (req, res) {
       { _id: req.body.data._id },
       { $set: { slots: req.body.data.slots} },
       { new: true })
-      const user = await UserModel.findOneAndUpdate(
-        { user: req.body.user, customLinks: { $not: { $elemMatch: { _id: linkInfo._id } } } },
+      const user = await UserModel.findOne(
+        { user: req.body.user}) 
+        let existingArray = false
+      for(let i in user.customLinks){
+        for(let ii in user.customLinks[i]){
+          console.log(user.customLinks[i][ii], linkInfo._id)
+          if (JSON.stringify(user.customLinks[i][ii]) === JSON.stringify(linkInfo._id)){
+            existingArray = true
+          }
+        }
+      }
+      console.log(existingArray, linkInfo._id, )
+      if(!existingArray){
+      await UserModel.findOneAndUpdate(
+        { user: req.body.user },
         { $push: { customLinks: [linkInfo._id, linkInfo.trackName, linkInfo.time, linkInfo.subTrackName] } },
-        { new: true }
-      );
-    console.log(linkInfo)
+        { new: true })}
+      
+    //console.log(linkInfo)
     res.send(linkInfo);
   } catch (error) {
     res.send(error);
