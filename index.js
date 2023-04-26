@@ -344,11 +344,11 @@ app.post("/rightCustomLinkUpdate", async function (req, res) {
       { _id: req.body.data._id },
       { $set: { slots: req.body.data.slots} },
       { new: true })
-      const user  = await UserModel.findOneAndUpdate(
-        { user: req.body.user },
-        { $push: { customLinks: [linkInfo._id, linkInfo.trackName, linkInfo.time] } },
+      const user = await UserModel.findOneAndUpdate(
+        { user: req.body.user, customLinks: { $not: { $elemMatch: { _id: linkInfo._id } } } },
+        { $push: { customLinks: [linkInfo._id, linkInfo.trackName, linkInfo.time, linkInfo.subTrackName] } },
         { new: true }
-      )
+      );
     console.log(linkInfo)
     res.send(linkInfo);
   } catch (error) {
