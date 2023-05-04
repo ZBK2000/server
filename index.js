@@ -30,6 +30,7 @@ const upload = multer({ storage: storage });
 
 //this is for storing the images
 app.post("/img", upload.array("img_urls"), async function (req, res) {
+  if(req.body?.track){
   const existingTrack = await TrackModel.findOneAndUpdate(
     { name: req.body.track },
     { $set: { img_urls: req.files } },
@@ -37,10 +38,39 @@ app.post("/img", upload.array("img_urls"), async function (req, res) {
   );
   const allTrack = await TrackModel.find();
   res.send(allTrack);
+} else if( req.body?.event){
+  const existingTrack = await LinkModel.findOneAndUpdate(
+    { trackName: req.body.event },
+    { $set: { img_urls: req.files } },
+    { new: true }
+  );
+  const allTrack = await TrackModel.find();
+  res.send({msg:"success"});
+}
 });
 
 //this is for retrieving the images
 app.get("/img", async function (req, res) {
+  console.log(req.query)
+  if( req.query?.event){
+    const track = await LinkModel.findOne({ _id: req.query.user_id });
+    try {
+      res.sendFile(
+        path.join(
+          process.cwd(),
+          "../../../..",
+          "public",
+          "images",
+          track.img_urls[req.query.number].filename
+        )
+      )
+      console.log('yee')
+    } catch (error) {
+      res.send(error)
+      console.log('yee', error, track)
+    }
+
+  } else {
   const track = await TrackModel.findOne({ name: req.query.user_id });
   res.sendFile(
     path.join(
@@ -50,7 +80,7 @@ app.get("/img", async function (req, res) {
       "images",
       track.img_urls[req.query.number].filename
     )
-  );
+  );}
 });
 
 //this is for saving new tracks
@@ -69,8 +99,9 @@ app.post("/", async function (req, res) {
 //this is fro retrieving all tracks
 app.get("/", async (req, res) => {
   const allTrack = await TrackModel.find();
+  const allLinks = await LinkModel.find()
  
-  res.send(allTrack);
+  res.send({allTrack : allTrack, allLinks: allLinks});
 });
 
 //this for signup
@@ -203,7 +234,7 @@ app.post("/cancel", async function (req, res) {
 app.post("/newDay", async function (req, res) {
   const doc = await TrackModel.findOneAndUpdate(
     { name: req.body.id },
-    { $set: { [`booked.${req.body.subTrack}${req.body.rightDay}`]: req.body.h3s } },
+    { $set: { [`booked.${req.body.subTrackName}.${req.body.rightDay}`]: req.body.h3s } },
     { new: true }
   );
     
@@ -251,16 +282,36 @@ app.post("/delete", async function (req, res) {
 });
 
 app.post("/review", async function (req, res) {
+  if (req.body?.linkId){
+    const doc = await LinkModel.findOneAndUpdate(
+      { _id: req.body.linkId },
+      { $push: { reviews: [req.body.name, req.body.review] } },
+      { new: true }
+    );
+      
+    res.send(doc.reviews)
+  } else {
   const doc = await TrackModel.findOneAndUpdate(
     { name: req.body.trackName },
     { $push: { reviews: [req.body.name, req.body.review, req.body.reviewicon] } },
     { new: true }
   );
     
-  res.send(doc.reviews);
+  res.send(doc.reviews);}
 });
 app.post("/initialReview", async function (req, res) {
-  
+  console.log(req.body, "hhhhhhh")
+  if(req.body?.linkId){
+    const doc = await LinkModel.findOne(
+      { _id: req.body.linkId }
+    );
+    try {
+      console.log(doc.reviews, "hahahahaa")
+      res.send(doc.reviews);
+    } catch (error) {
+      res.send({msg:["no reviews yet"]})
+    }
+  } else {
   const doc = await TrackModel.findOne(
     { name: req.body.trackName }
   );
@@ -269,7 +320,7 @@ app.post("/initialReview", async function (req, res) {
       res.send(doc.reviews);
     } catch (error) {
       res.send("no reviews yet")
-    }
+    }}
   
 });
 
@@ -324,7 +375,7 @@ app.post("/customLink", async function (req, res) {
     await newLink.save();
     const user  = await UserModel.findOneAndUpdate(
       { user: req.body.user },
-      { $push: { customLinks: [newLink._id, newLink.trackName, newLink.time, newLink.subTrackName] } },
+      { $push: { customLinks: [newLink._id, newLink.trackName, newLink.time, newLink.subTrackName, newLink.organizer] } },
       { new: true }
     )
     res.send({msg: "success", linkId:newLink._id});
@@ -366,7 +417,7 @@ app.post("/rightCustomLinkUpdate", async function (req, res) {
       if(!existingArray){
       await UserModel.findOneAndUpdate(
         { user: req.body.user },
-        { $push: { customLinks: [linkInfo._id, linkInfo.trackName, linkInfo.time, linkInfo.subTrackName] } },
+        { $push: { customLinks: [linkInfo._id, linkInfo.trackName, linkInfo.time, linkInfo.subTrackName, linkInfo.organizer] } },
         { new: true })}
       
     //console.log(linkInfo)
@@ -376,6 +427,23 @@ app.post("/rightCustomLinkUpdate", async function (req, res) {
   }
 
 })
+
+app.post("/openCustomLink", async function (req, res) {
+  console.log(req.body.hashcode)
+  try {
+    const linkInfo = await LinkModel.findOneAndUpdate(
+      { _id: req.body.hashcode},
+      { $set: { isopen: true} },
+      { new: true })
+    console.log(linkInfo)
+    res.send(linkInfo);
+  } catch (error) {
+    res.send(error);
+  }
+
+})
+
+
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success");
 }).catch((err) => {

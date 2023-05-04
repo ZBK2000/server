@@ -9,7 +9,15 @@ const LinkSchema  = new Schema({
   location: String,
   time: String,
   user: Object,
-  subTrackName: String
+  subTrackName: String,
+  isopen: Boolean,
+  description: String,
+  city: String,
+  sportType: String,
+  isLimited: Boolean,
+  organizer: String,
+  img_urls: Array,
+  reviews: Array
 
  
 });
