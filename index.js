@@ -15,8 +15,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "../../../../public/images");
-    //cb(null, "public/images")
+    //cb(null, "../../../../public/images");
+    cb(null, "public/images")
   },
   filename: function (req, file, cb) {
     cb(
@@ -30,6 +30,7 @@ const upload = multer({ storage: storage });
 
 //this is for storing the images
 app.post("/img", upload.array("img_urls"), async function (req, res) {
+  try{
   if(req.body?.track){
   const existingTrack = await TrackModel.findOneAndUpdate(
     { name: req.body.track },
@@ -46,41 +47,48 @@ app.post("/img", upload.array("img_urls"), async function (req, res) {
   );
   const allTrack = await TrackModel.find();
   res.send({msg:"success"});
+}} catch (e){
+  console.log(e)
 }
 });
 
 //this is for retrieving the images
 app.get("/img", async function (req, res) {
-  console.log(req.query)
-  if( req.query?.event){
-    const track = await LinkModel.findOne({ _id: req.query.user_id });
-    try {
-      res.sendFile(
-        path.join(
-          process.cwd(),
-          "../../../..",
-          "public",
-          "images",
-          track.img_urls[req.query.number].filename
+  try {
+    console.log(req.query)
+    if( req.query?.event){
+      const track = await LinkModel.findOne({ _id: req.query.user_id });
+      try {
+        res.sendFile(
+          path.join(
+            process.cwd(),
+            "../../../..",
+            "public",
+            "images",
+            track.img_urls[req.query.number].filename
+          )
         )
+        console.log('yee')
+      } catch (error) {
+        res.send(error)
+        console.log('yee', error, track)
+      }
+  
+    } else {
+    const track = await TrackModel.findOne({ name: req.query.user_id });
+    res.sendFile(
+      path.join(
+        process.cwd(),
+        "../../../..",
+        "public",
+        "images",
+        track.img_urls[req.query.number].filename
       )
-      console.log('yee')
-    } catch (error) {
-      res.send(error)
-      console.log('yee', error, track)
-    }
-
-  } else {
-  const track = await TrackModel.findOne({ name: req.query.user_id });
-  res.sendFile(
-    path.join(
-      process.cwd(),
-      "../../../..",
-      "public",
-      "images",
-      track.img_urls[req.query.number].filename
-    )
-  );}
+    );}
+  } catch (error) {
+    console.log(error)
+  }
+ 
 });
 
 //this is for saving new tracks
@@ -129,6 +137,37 @@ app.post("/usersave", async function (req, res) {
   res.send("successfully registrated");
 });
 
+
+app.post("/GoogleSignIn", async function (req, res) {
+  
+  const existingUser = await UserModel.findOne(
+    { password: req.body.password }
+);
+  if (existingUser){
+    res.send({msg:"successful login", userName: existingUser.user});
+  } else {
+    const newUser = new UserModel(req.body);
+    await newUser.save();
+    res.send("successfully registrated");
+  }
+  
+});
+
+app.post("/GoogleSignInUserName", async function (req, res) {
+  const doc = await UserModel.findOneAndUpdate(
+    { password: req.body.password },
+    { $set: { user: req.body.user } },
+    { new: true }
+  );
+  if (doc){
+    res.send("success");
+  } else {
+    
+    res.send("fail");
+  }
+  
+});
+
 //this for login
 app.post("/login", async function (req, res) {
   const user = await UserModel.findOne({ password: req.body.password });
@@ -159,7 +198,7 @@ app.post("/tracks", async function (req, res) {
   await UserModel.findOneAndUpdate(
     { user: req.body.user },
     {
-      $push: { booked_tracks: `${req.body.id}: ${req.body.rightDay} ${text} ${req.body.subTrackName}` },
+      $push: { booked_tracks: [req.body.id, req.body.rightDay, text, req.body.city, req.body.sportType,req.body.subTrackName] },
     },
     { new: true }
   );
@@ -375,7 +414,7 @@ app.post("/customLink", async function (req, res) {
     await newLink.save();
     const user  = await UserModel.findOneAndUpdate(
       { user: req.body.user },
-      { $push: { customLinks: [newLink._id, newLink.trackName, newLink.time, newLink.subTrackName, newLink.organizer] } },
+      { $push: { customLinks: [newLink._id, newLink.trackName, newLink.time, newLink.subTrackName, newLink.organizer, newLink.city, newLink.sportType] } },
       { new: true }
     )
     res.send({msg: "success", linkId:newLink._id});
@@ -417,7 +456,7 @@ app.post("/rightCustomLinkUpdate", async function (req, res) {
       if(!existingArray){
       await UserModel.findOneAndUpdate(
         { user: req.body.user },
-        { $push: { customLinks: [linkInfo._id, linkInfo.trackName, linkInfo.time, linkInfo.subTrackName, linkInfo.organizer] } },
+        { $push: { customLinks: [linkInfo._id, linkInfo.trackName, linkInfo.time, linkInfo.subTrackName, linkInfo.organizer, linkInfo.city, linkInfo.sportType] } },
         { new: true })}
       
     //console.log(linkInfo)

@@ -15,6 +15,7 @@ const TrackSchema  = new Schema({
   reviews: Array,
   latAndLong: Array,
   trackName: Array,
+  activity: String
  
 });
 
