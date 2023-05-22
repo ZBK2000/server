@@ -8,6 +8,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs"
 import LinkModel from "./customLinkdb.js";
+import nodemailer from "nodemailer"
 config();
 const app = express();
 app.use(express.json());
@@ -28,6 +29,19 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+const transporter = nodemailer.createTransport({
+  host: 'smtp-mail.outlook.com',
+  port: 587,
+  secure: false, // StartTLS should be used
+  auth: {
+    user: process.env.EMAIL ,
+    pass: process.env.PASSWORD ,
+  },
+  requireTLS: true,
+  tls:{
+    rejectUnauthorized: false
+  }
+});
 //this is for storing the images
 app.post("/img", upload.array("img_urls"), async function (req, res) {
   try{
@@ -418,6 +432,32 @@ app.post("/customLink", async function (req, res) {
       { new: true }
     )
     res.send({msg: "success", linkId:newLink._id});
+    const htmlContent = `
+  <html>
+    <body>
+      <h2>Hi <strong>${user.user}</strong>,</h2>
+      <p>You successfully created the event <strong>"${req.body.trackName}"</strong> at <strong>${req.body.time}h</strong>.</p>
+      <p>We will inform you about joining/leaving participants.</p>
+      <p>If you did not create this event or have any questions, please contact us at <a href="mailto:support@email.com">support@email.com</a>.</p>
+      <p>Have a great time :)</p>
+      <p>Sport together team</p>
+    </body>
+  </html>
+`;
+    const mailOptions = {
+      from: 'businessTest@outlook.hu',
+      to: `${user.password}`,
+      subject: 'Successful Event creation',
+      html: htmlContent
+    };
+    
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    });
   } catch (error) {
     res.send(error);
   }
@@ -457,9 +497,37 @@ app.post("/rightCustomLinkUpdate", async function (req, res) {
       await UserModel.findOneAndUpdate(
         { user: req.body.user },
         { $push: { customLinks: [linkInfo._id, linkInfo.trackName, linkInfo.time, linkInfo.subTrackName, linkInfo.organizer, linkInfo.city, linkInfo.sportType] } },
-        { new: true })}
+        { new: true })
+        const htmlContent = `
+  <html>
+    <body>
+      <h2>Hi <strong>${user.user}</strong>,</h2>
+      <p>You successfully joined ${linkInfo.organizer}'s <strong>"${linkInfo.trackName}"</strong> event at <strong>${linkInfo.time}h</strong>.</p>
+      <p>We will inform you about any changes regarding the event.</p>
+      <p>If you did not join this event or have any questions, please contact us at <a href="mailto:support@email.com">support@email.com</a>.</p>
+      <p>Have a great time :)</p>
+      <p>Sport-Together team</p>
+    </body>
+  </html>
+`;
+        const mailOptions = {
+          from: 'businessTest@outlook.hu',
+          to: `${user.password}`,
+          subject: 'Successful join',
+          html: htmlContent
+        };
+        
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.log(error);
+          } else {
+            console.log('Email sent: ' + info.response);
+          }
+        });
+      }
       
     //console.log(linkInfo)
+    console.log("kene hogy kuldjon")
     res.send(linkInfo);
   } catch (error) {
     res.send(error);
