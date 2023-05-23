@@ -475,7 +475,7 @@ app.post("/rightCustomLink", async function (req, res) {
 
 })
 app.post("/rightCustomLinkUpdate", async function (req, res) {
-  console.log(req.body.data)
+ 
   try {
     const linkInfo = await LinkModel.findOneAndUpdate(
       { _id: req.body.data._id },
@@ -486,13 +486,13 @@ app.post("/rightCustomLinkUpdate", async function (req, res) {
         let existingArray = false
       for(let i in user.customLinks){
         for(let ii in user.customLinks[i]){
-          console.log(user.customLinks[i][ii], linkInfo._id)
+          
           if (JSON.stringify(user.customLinks[i][ii]) === JSON.stringify(linkInfo._id)){
             existingArray = true
           }
         }
       }
-      console.log(existingArray, linkInfo._id, )
+      
       if(!existingArray){
       await UserModel.findOneAndUpdate(
         { user: req.body.user },
@@ -524,12 +524,23 @@ app.post("/rightCustomLinkUpdate", async function (req, res) {
             console.log('Email sent: ' + info.response);
           }
         });
+        console.log("kene hogy kuldjon")
+      }
+      else if(existingArray){
+        const user = await UserModel.findOne({ user: req.body.user })
+        const index = user.customLinks.findIndex((item) => JSON.stringify(item[0]) === JSON.stringify(linkInfo._id));
+        console.log(index)
+        if (index !== -1) {
+          user.customLinks.splice(index, 1);
+          console.log(user.customLinks)
+          await user.save();}
       }
       
     //console.log(linkInfo)
-    console.log("kene hogy kuldjon")
+    
     res.send(linkInfo);
   } catch (error) {
+    console.log(error)
     res.send(error);
   }
 
@@ -550,6 +561,95 @@ app.post("/openCustomLink", async function (req, res) {
 
 })
 
+app.post("/cancelEvent", async function (req, res) {
+  console.log(req.body, "igen")
+  try {
+    const deletedEvent = await  LinkModel.findOneAndDelete({ _id: req.body.id });
+    try {
+      for (let images_number in deletedEvent.img_urls) {
+        fs.unlink(path.join(
+          process.cwd(),
+          "../../../..",
+          "public",
+          "images",
+          deletedEvent.img_urls[images_number].filename), (err) => {
+          if (err) {
+            console.log(err);
+            
+          }}
+        )
+      }
+    } catch (error) {
+      console.log(error)
+    }
+    
+   // await  LinkModel.findOneAndDelete({ _id: req.body.id });
+    try {
+      const users = await UserModel.find({ user: { $in: req.body.participants } });
+      console.log(users)
+      for (const user of users) {
+        
+        const index = user.customLinks.findIndex((item) => JSON.stringify(item[0]) === JSON.stringify(req.body.id));
+        console.log(index)
+        if (index !== -1) {
+          user.customLinks.splice(index, 1);
+          console.log(user.customLinks)
+          await user.save();
+
+          const htmlContent =user.user ===deletedEvent.organizer?
+          `
+          <html>
+            <body>
+              <h2>Hi <strong>${user.user}</strong>,</h2>
+              <p>You successfully cancelled your <strong>"${deletedEvent.trackName}"</strong> event at <strong>${deletedEvent.time}h</strong> was cancelled.</p>
+              <p>Your cancellation message:</p>
+              <hr/>
+              <p>${req.body?.desc?req.body.desc: "-"}</p>
+              <hr/>
+              <p>We hope you find another time to organize this cool event :)</p>
+              <p>Sport-Together team</p>
+            </body>
+          </html>
+        `
+          :`
+          <html>
+            <body>
+              <h2>Hi <strong>${user.user}</strong>,</h2>
+              <p>We are sorry to inform you that ${deletedEvent.organizer}'s <strong>"${deletedEvent.trackName}"</strong> event at <strong>${deletedEvent.time}h</strong> was cancelled.</p>
+              <p>${deletedEvent.organizer}''s message:</p>
+              <hr/>
+              <p>${req.body?.desc?req.body.desc: "-"}</p>
+              <hr/>
+              <p>We hope you find another event that you can participate in :)</p>
+              <p>Sport-Together team</p>
+            </body>
+          </html>
+        ` ;
+            const mailOptions = {
+              from: 'businessTest@outlook.hu',
+              to: `${user.password}`,
+              subject: 'Event cancellation',
+              html: htmlContent
+            };
+            
+          await  transporter.sendMail(mailOptions );
+
+        }
+      }
+
+      
+      
+      res.status(200).json({ message: 'Processing completed successfully' });
+    } catch (error) {
+      console.log(error)
+      res.status(500).json({ error: 'An error occurred while deleting' });
+    }
+  } catch (error) {
+    console.log(error)
+    res.send(error);
+  }
+
+})
 
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success");
