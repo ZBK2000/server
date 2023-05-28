@@ -18,7 +18,8 @@ const LinkSchema  = new Schema({
   organizer: String,
   img_urls: Array,
   reviews: Array,
-  activity_start_datetime: Date
+  activity_start_datetime: Date,
+  latAndLong: Array,
 
  
 });
