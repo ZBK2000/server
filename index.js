@@ -271,7 +271,7 @@ app.post("/GoogleSignIn", async function (req, res) {
   } else {
     const newUser = new UserModel(req.body);
     await newUser.save();
-    res.send("successfully registrated");
+    res.send({msg:"successfully registrated"});
   }
   
 });
