@@ -69,7 +69,7 @@ app.post("/img", upload.array("img_urls"), async function (req, res) {
 //this is for retrieving the images
 app.get("/img", async function (req, res) {
   try {
-    console.log(req.query)
+    
     if( req.query?.event){
       const track = await LinkModel.findOne({ _id: req.query.user_id });
       try {
@@ -82,10 +82,10 @@ app.get("/img", async function (req, res) {
             track.img_urls[req.query.number].filename
           )
         )
-        console.log('yee')
+        
       } catch (error) {
         res.send(error)
-        console.log('yee', error, track)
+        
       }
   
     } else {
@@ -125,6 +125,115 @@ app.get("/", async (req, res) => {
  
   res.send({allTrack : allTrack, allLinks: allLinks});
 });
+/*app.post("/partialLoad", async (req, res) => {
+  console.log(req.body)
+  const count = req.body.count ;
+  const count2 = req.body.count2 ;
+  const batchSize = 16;
+ 
+  if(req.body.community){
+
+    
+    const allLinks = await LinkModel.find().skip(count).limit(batchSize);
+    res.send({  allLinks });
+    console.log(allLinks.length )
+  } else if(!req.body.community){
+
+    const allTrack = await TrackModel.find().skip(count2).limit(batchSize);
+    res.send({  allTrack });
+    console.log(allTrack.length )
+  }
+  
+ 
+  
+});*/
+
+app.post("/partialLoad", async (req, res) => {
+  console.log(req.body);
+  const count = req.body.count;
+  const count2 = req.body.count2;
+  const batchSize = 16;
+
+  if (req.body.community) {
+    const filterItems = req.body.filterItems || {}; // Assuming filterItems is passed in the request body
+    let query = LinkModel.find();
+
+    if (filterItems.length) {
+      const shouldFilterLocation = filterItems[2] !== "";
+      const shouldFilterTrackName = filterItems[3] !== "";
+      const shouldFilterSportType = filterItems[4] !== "";
+      const filterDateFrom = filterItems[5] !== "" ? new Date(filterItems[5]) : "";
+      const filterDateTo = filterItems[6] !== "" ? new Date(filterItems[6]) : "";
+
+      const conditions = [];
+
+      if (!shouldFilterLocation || filterItems[2]) {
+        conditions.push({ city: { $regex: new RegExp(filterItems[2], "i") } });
+      }
+      if (!shouldFilterTrackName || filterItems[3]) {
+        conditions.push({ trackName: { $regex: new RegExp(filterItems[3], "i") } });
+      }
+      if (!shouldFilterSportType || filterItems[4]) {
+        conditions.push({ sportType: { $regex: new RegExp(filterItems[4], "i") } });
+      }
+      if (filterDateFrom || filterDateTo) {
+        const timeConditions = {};
+        if (filterDateFrom) {
+          timeConditions.$gte = filterDateFrom;
+        }
+        if (filterDateTo) {
+          timeConditions.$lte = filterDateTo;
+        }
+        conditions.push({ time: timeConditions });
+      }
+     const currentDatetime = new Date();
+      currentDatetime.setHours(0, 0, 0, 0); // Set time to 00:00:00 to compare dates only
+
+      conditions.push({ activity_start_datetime: { $gte: currentDatetime } }); 
+      if (filterItems[7] && filterItems[8]) {
+        conditions.push({
+          $or: [
+            {
+              "slots.length": { $gte: filterItems[0][0], $lte: filterItems[0][1] },
+            },
+            { isLimited: { $ne: filterItems[8] } },
+          ],
+        });
+      } else if (!filterItems[7] && filterItems[8]) {
+        conditions.push({ isLimited: filterItems[7] });
+      } else if (filterItems[7] && !filterItems[8]) {
+        conditions.push({
+          "slots.length": { $gte: filterItems[0][0], $lte: filterItems[0][1] },
+          isLimited: { $ne: filterItems[8] },
+        });
+      }
+      conditions.push({ isopen: true });
+      query = query.and(conditions);
+      console.log(conditions)
+      const allLinks = await query.skip(count).limit(batchSize).exec();
+    res.send({ allLinks });
+    console.log(allLinks.length);
+    } else{
+      const conditions = [];
+      const currentDatetime = new Date();
+      currentDatetime.setHours(0, 0, 0, 0); // Set time to 00:00:00 to compare dates only
+      conditions.push({ isopen: true });
+      conditions.push({ activity_start_datetime: { $gte: currentDatetime } }); 
+      console.log(conditions)
+      query = query.and(conditions);
+      const allLinks = await query.find().skip(count).limit(batchSize);
+    res.send({  allLinks });
+    console.log(allLinks.length )
+    }
+
+    
+  } else if (!req.body.community) {
+    const allTrack = await TrackModel.find().skip(count2).limit(batchSize).exec();
+    res.send({ allTrack });
+    console.log(allTrack.length);
+  }
+});
+
 
 //this for signup
 app.post("/signup", async function (req, res) {
@@ -424,6 +533,10 @@ app.post("/favourites", async function (req, res) {
 
 app.post("/customLink", async function (req, res) {
   try {
+   /* for (let i = 0; i < 30; i++) {
+      const newLink = new LinkModel(req.body);
+      await newLink.save();
+    }*/
     const newLink = new LinkModel(req.body);
     await newLink.save();
     const user  = await UserModel.findOneAndUpdate(

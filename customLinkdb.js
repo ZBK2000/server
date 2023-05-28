@@ -17,7 +17,8 @@ const LinkSchema  = new Schema({
   isLimited: Boolean,
   organizer: String,
   img_urls: Array,
-  reviews: Array
+  reviews: Array,
+  activity_start_datetime: Date
 
  
 });
