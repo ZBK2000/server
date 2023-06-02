@@ -207,7 +207,8 @@ app.post("/partialLoad", async (req, res) => {
           isLimited: { $ne: filterItems[8] },
         });
       }
-      conditions.push({ isopen: true });
+      if(!filterItems[11].length) conditions.push({ isopen: true });
+      if(filterItems[11].length) conditions.push({_id: { $in: filterItems[11] }})
       query = query.and(conditions);
       console.log(conditions)
       const allLinks = await query.skip(count).limit(batchSize).exec();
@@ -314,7 +315,7 @@ app.post("/tracks", async function (req, res) {
   }
   const foundBooking = existingTrack.booked[req.body.subTrackName][req.body.rightDay].find(booking => booking.text.includes(text))
   console.log(foundBooking)
-  if (!foundBooking.slots.includes("")){
+  if (!foundBooking.slots.includes("")){ 
     res.status(403).send(existingTrack)
     return
   }
