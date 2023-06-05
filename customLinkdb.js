@@ -20,6 +20,7 @@ const LinkSchema  = new Schema({
   reviews: Array,
   activity_start_datetime: Date,
   latAndLong: Array,
+  onlineLink: String,
 
  
 });

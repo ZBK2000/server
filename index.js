@@ -261,9 +261,8 @@ app.post("/usersave", async function (req, res) {
   res.send("successfully registrated");
 });
 
-
 app.post("/GoogleSignIn", async function (req, res) {
-  
+  console.log("halo")
   const existingUser = await UserModel.findOne(
     { password: req.body.password }
 );
@@ -273,10 +272,10 @@ app.post("/GoogleSignIn", async function (req, res) {
     const newUser = new UserModel(req.body);
     await newUser.save();
     res.send({msg:"successfully registrated"});
-  }
-  
+  }  
+   
 });
-
+  
 app.post("/GoogleSignInUserName", async function (req, res) {
   const doc = await UserModel.findOneAndUpdate(
     { password: req.body.password },
@@ -284,7 +283,7 @@ app.post("/GoogleSignInUserName", async function (req, res) {
     { new: true }
   );
   if (doc){
-    res.send("success");
+    res.send({msg:"success"});
   } else {
     
     res.send("fail");
@@ -764,6 +763,30 @@ app.post("/cancelEvent", async function (req, res) {
   }
 
 })
+
+
+app.post("/deleteAccount", async function (req, res) {
+  try {
+    const deleteUser = await UserModel.findOne({ user: req.body.user });
+    if(deleteUser.customLinks.length){
+      res.send({msg:"you organize/participate"})
+      return
+    }
+
+    const deleteResult = await UserModel.deleteOne({ user: req.body.user });
+    console.log(deleteResult);
+
+    if (deleteResult.deletedCount === 1) {
+
+      res.send({msg:"Account deleted successfully"});
+    } else {
+      res.send({msg:"Account not found or already deleted"});
+    }
+  } catch (error) {
+    res.send(error);    
+  }
+});
+
 
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success");
