@@ -21,6 +21,8 @@ const LinkSchema  = new Schema({
   activity_start_datetime: Date,
   latAndLong: Array,
   onlineLink: String,
+  price:Number,
+  lengthOfActivity:Number
 
  
 });

@@ -159,22 +159,22 @@ app.post("/partialLoad", async (req, res) => {
     let query = LinkModel.find();
 
     if (filterItems.length) {
-      const shouldFilterLocation = filterItems[2] !== "";
-      const shouldFilterTrackName = filterItems[3] !== "";
-      const shouldFilterSportType = filterItems[4] !== "";
-      const filterDateFrom = filterItems[5] !== "" ? new Date(filterItems[5]) : "";
-      const filterDateTo = filterItems[6] !== "" ? new Date(filterItems[6]) : "";
+      const shouldFilterLocation = filterItems[0] !== "";
+      const shouldFilterTrackName = filterItems[1] !== "";
+      const shouldFilterSportType = filterItems[2] !== "";
+      const filterDateFrom = filterItems[3] !== "" ? new Date(filterItems[3]) : "";
+      const filterDateTo = filterItems[4] !== "" ? new Date(filterItems[4]) : "";
 
       const conditions = [];
 
-      if (!shouldFilterLocation || filterItems[2]) {
-        conditions.push({ city: { $regex: new RegExp(filterItems[2], "i") } });
+      if (!shouldFilterLocation || filterItems[0]) {
+        conditions.push({ city: { $regex: new RegExp(filterItems[0], "i") } });
       }
-      if (!shouldFilterTrackName || filterItems[3]) {
-        conditions.push({ trackName: { $regex: new RegExp(filterItems[3], "i") } });
+      if (!shouldFilterTrackName || filterItems[1]) {
+        conditions.push({ trackName: { $regex: new RegExp(filterItems[1], "i") } });
       }
-      if (!shouldFilterSportType || filterItems[4]) {
-        conditions.push({ sportType: { $regex: new RegExp(filterItems[4], "i") } });
+      if (!shouldFilterSportType || filterItems[2]) {
+        conditions.push({ sportType: { $regex: new RegExp(filterItems[2], "i") } });
       }
       if (filterDateFrom || filterDateTo) {
         const timeConditions = {};
@@ -184,36 +184,48 @@ app.post("/partialLoad", async (req, res) => {
         if (filterDateTo) {
           timeConditions.$lte = filterDateTo;
         }
-        conditions.push({ time: timeConditions });
+        conditions.push({ activity_start_datetime: timeConditions });
       }
      const currentDatetime = new Date();
       currentDatetime.setHours(0, 0, 0, 0); // Set time to 00:00:00 to compare dates only
 
       conditions.push({ activity_start_datetime: { $gte: currentDatetime } }); 
-      if (filterItems[7] && filterItems[8]) {
-        conditions.push({
-          $or: [
+      if (filterItems[5]) {
+        if(filterItems[5]==="unlimited"){
+          conditions.push({
+           
+            isLimited: false ,
+          });
+        } else{
+          conditions.push(
+            { $expr: { $lte: [{ $size: '$slots' }, filterItems[5]] } },
             {
-              "slots.length": { $gte: filterItems[0][0], $lte: filterItems[0][1] },
-            },
-            { isLimited: { $ne: filterItems[8] } },
-          ],
-        });
-      } else if (!filterItems[7] && filterItems[8]) {
-        conditions.push({ isLimited: filterItems[7] });
-      } else if (filterItems[7] && !filterItems[8]) {
+           
+              isLimited: true ,
+            }
+          );
+        }
+      
+      } 
+      if(filterItems[6]){
         conditions.push({
-          "slots.length": { $gte: filterItems[0][0], $lte: filterItems[0][1] },
-          isLimited: { $ne: filterItems[8] },
+          price: {$lte: filterItems[6]} ,
         });
       }
-      if(!filterItems[11].length) conditions.push({ isopen: true });
-      if(filterItems[11].length) conditions.push({_id: { $in: filterItems[11] }})
+      if(filterItems[6]===0){
+        conditions.push({
+          price:  filterItems[6]
+        });
+      }
+      if(!filterItems[7].length&&!filterItems[8].length) conditions.push({ isopen: true });
+      if(filterItems[7].length) conditions.push({_id: { $in: filterItems[7] }})
+      if(filterItems[8].length) conditions.push({_id: { $in: filterItems[8] }})
       query = query.and(conditions);
       console.log(conditions)
       const allLinks = await query.skip(count).limit(batchSize).exec();
     res.send({ allLinks });
     console.log(allLinks.length);
+    
     } else{
       const conditions = [];
       const currentDatetime = new Date();
